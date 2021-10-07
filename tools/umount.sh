@@ -1,6 +1,8 @@
 #!/bin/bash
 
+sed -i 's/^#//g' mnt/etc/ld.so.preload
 sudo umount mnt/{dev/pts,dev,sys,proc,boot,}
+
 
 sudo losetup -d /dev/loop0
 sudo kpartx -ds /dev/loop0

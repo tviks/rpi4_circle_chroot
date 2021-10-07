@@ -1,6 +1,6 @@
 #!/bin/bash
-echo $1
-echo $2
+
+source tools/color.sh
 
 print_space=$"======================"
 
@@ -24,38 +24,42 @@ sudo mount --bind /sys mnt/sys/
 sudo mount --bind /proc mnt/proc/
 sudo mount --bind /dev/pts mnt/dev/pts
 
+sed -i 's/^/#/g' mnt/etc/ld.so.preload
+
 sudo cp /usr/bin/qemu-aarch64-static mnt/usr/bin/        
 
 sudo service binfmt-support start
-echo $print_space
-echo "DONE"
-echo $print_space
 sudo rm -rf mnt/etc/resolv.conf
 sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
 
 if [[ "$1" == "y" ]]; then
   echo $print_space
-  echo "UPDATE ISO - YES"
+  MESSAGE="UPDATE ISO - YES" ; blue_echo
   echo $print_space
   sudo chroot mnt/ bin/bash << "EOT" 
-  sudo apt-get update && sudo apt-get upgrade -y 
+  sudo apt-get update && sudo apt-get upgrade -y
+  sudo /etc/init.d/ssh restart 
 EOT
+  MESSAGE="COMPLETE UPDATE ISO" ; green_echo
 
 else
   echo $print_space
-  echo "SKIP UPDATE ISO"
+  MESSAGE="SKIP UPDATE ISO" ; green_echo
   echo $print_space
 fi
 
-if [[ $2 == "wifi" ]]; then
-  echo "WIFI AP - YES"
-    sudo cp scripts/wifi_ap.sh mnt/root/
-    sudo chroot mnt/ bin/bash ./root/wifi_ap.sh
-
+if [[ $2 == "y" ]]; then
+  MESSAGE="ADD SKRIPT - YES" ; green_echo
+  echo $print_space
+  sudo cp scripts/$3 mnt/root/
+  sudo chroot mnt/ bin/bash ./root/$3 
+  MESSAGE="SKRIPT COMPLETE" ; green_echo
 else
-  echo "WIFI AP - NO"
+  MESSAGE="SKRIPT SKIP" ; green_echo
+  echo $print_space
 fi
 
+sed -i 's/^#//g' mnt/etc/ld.so.preload
 
 sudo umount mnt/{dev/pts,dev,sys,proc,boot,}
 

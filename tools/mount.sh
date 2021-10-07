@@ -1,6 +1,6 @@
 #!/bin/bash
-echo $1
-echo $2
+
+source tools/color.sh
 
 iso_name=$(ls iso/)
 
@@ -22,13 +22,15 @@ sudo mount --bind /sys mnt/sys/
 sudo mount --bind /proc mnt/proc/
 sudo mount --bind /dev/pts mnt/dev/pts
 
-sudo cp /usr/bin/qemu-aarch64-static mnt/usr/bin/        
+sed -i 's/^/#/g' mnt/etc/ld.so.preload
+
+sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/        
 sudo rm -rf mnt/etc/resolv.conf
 sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
 
 sudo service binfmt-support start
 
-echo "DONE"
+echo "DONE"; green_echo
 
 
 
