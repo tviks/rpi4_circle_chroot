@@ -2,8 +2,6 @@
 echo $1
 echo $2
 
-print_space=$"======================"
-
 iso_name=$(ls iso/)
 
 #echo $iso_name
@@ -25,40 +23,12 @@ sudo mount --bind /proc mnt/proc/
 sudo mount --bind /dev/pts mnt/dev/pts
 
 sudo cp /usr/bin/qemu-aarch64-static mnt/usr/bin/        
-
-sudo service binfmt-support start
-echo $print_space
-echo "DONE"
-echo $print_space
 sudo rm -rf mnt/etc/resolv.conf
 sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
 
-if [[ "$1" == "y" ]]; then
-  echo $print_space
-  echo "UPDATE ISO - YES"
-  echo $print_space
-  sudo chroot mnt/ bin/bash << "EOT" 
-  sudo apt-get update && sudo apt-get upgrade -y 
-EOT
+sudo service binfmt-support start
 
-else
-  echo $print_space
-  echo "SKIP UPDATE ISO"
-  echo $print_space
-fi
-
-if [[ $2 == "wifi" ]]; then
-  echo "WIFI AP - YES"
-    sudo cp scripts/wifi_ap.sh mnt/root/
-    sudo chroot mnt/ bin/bash ./root/wifi_ap.sh
-
-else
-  echo "WIFI AP - NO"
-fi
+echo "DONE"
 
 
-sudo umount mnt/{dev/pts,dev,sys,proc,boot,}
-
-sudo losetup -d /dev/loop0
-sudo kpartx -ds /dev/loop0
 
