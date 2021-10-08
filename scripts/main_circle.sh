@@ -29,8 +29,6 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 domain=wlan
 address=/gw.wlan/192.168.4.1" >> /etc/dnsmasq.conf
 
-sudo rfkill unblock wlan
-
 sudo echo "country_code=GB
 interface=wlan0
 ssid=Circle
@@ -49,7 +47,8 @@ sudo sed -i 's/#DAEMON_CONF=""/DAEMON_CONF="\/etc\/hostapd\/hostapd.conf"/g' /et
 
 
 sudo echo "sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo netfilter-persistent save" >> before.sh
+sudo netfilter-persistent save
+sudo rfkill unblock wlan" >> before.sh
 
 sudo chmod +x before.sh
 
