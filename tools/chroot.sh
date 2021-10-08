@@ -27,6 +27,7 @@ sudo mount --bind /dev/pts mnt/dev/pts
 sed -i 's/^/#/g' mnt/etc/ld.so.preload
 
 sudo cp /usr/bin/qemu-aarch64-static mnt/usr/bin/        
+sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/   
 
 sudo service binfmt-support start
 sudo rm -rf mnt/etc/resolv.conf

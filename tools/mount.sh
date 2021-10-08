@@ -2,7 +2,7 @@
 
 source tools/color.sh
 
-iso_name=$(ls iso/)
+iso_name=$(ls iso/ | cut -d' ' -f2 | sed -n '1p')
 
 #echo $iso_name
 
