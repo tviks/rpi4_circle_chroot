@@ -4,7 +4,7 @@ source tools/color.sh
 
 print_space=$"======================"
 
-iso_name=$(ls iso/)
+iso_name=$(ls iso/ | cut -d' ' -f2 | sed -n '2p')
 
 #echo $iso_name
 
