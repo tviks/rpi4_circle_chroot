@@ -1,5 +1,0 @@
-all:
-  hosts:
-    circle:
-      ansible_host: /home/tviks/rpi4_circle_chroot/mnt/
-      ansible_executable: /bin/bash

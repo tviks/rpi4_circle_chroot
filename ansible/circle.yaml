@@ -1,6 +1,0 @@
----
-- name: Customize Jetson rootfs
-  hosts: circle
-  connection: chroot
-  roles:
-    - circle
