@@ -16,7 +16,7 @@ if [[ $iso_size < 6 ]]; then
   echo $print_space
   echo "ADD SPACE"; blue_echo
   echo $print_space
-  dd if=/dev/zero bs=1024M count=10 >> iso/$iso_name 
+  dd if=/dev/zero bs=1024M count=1 >> iso/$iso_name 
 
 else
   echo $print_space
@@ -32,11 +32,11 @@ resizepart 2 -1s
 quit
 EOF
 
+sudo losetup -d /dev/$(echo $loop_dev | cut -c -5)
 sudo e2fsck -f /dev/mapper/"$(echo $loop_dev | cut -c -5)"p2 > /dev/null 2>&1 &
 sudo resize2fs /dev/mapper/"$(echo $loop_dev | cut -c -5)"p2 > /dev/null 2>&1 &
 
 echo "COMPLETE RESIZE FILESYSTEM"; blue_echo
 
-sudo losetup -d /dev/$(echo $loop_dev | cut -c -5)
 sudo kpartx -ds /dev/$(echo $loop_dev | cut -c -5)
 

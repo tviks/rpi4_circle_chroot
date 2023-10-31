@@ -1,35 +1,28 @@
-SELF_NAME=$(basename $0)
+#!/bin/bash
 
-# Prints warning/error $MESSAGE in red foreground color
-#
-# For e.g. You can use the convention of using RED color for [E]rror messages
-red_echo() {
-    echo -e "\x1b[1;31m[E] $SELF_NAME: $MESSAGE\e[0m"
+declare -A c
+c["RED"]='31'
+c["GREEN"]='32'
+c["YELLOW"]='33'
+c["BLACK"]='0'
+
+colorText () {
+    printf '\e[%sm%s\e[0m\n' "${c[$1]}" "$2"
 }
 
-simple_red_echo() {
-    echo -e "\x1b[1;31m$MESSAGE\e[0m"
+display_center(){
+    columns="$(tput cols)"
+    #printf "%*s\n" $[columns/2] "$2" 
+    space=$(printf "%*s" $[columns/2])
+    printf '\e[%sm%s%s\e[0m\n' "${c[$1]}" "$space" "$2"
 }
 
-# Prints success/info $MESSAGE in green foreground color
-#
-# For e.g. You can use the convention of using GREEN color for [S]uccess messages
-green_echo() {
-    echo -e "\x1b[1;32m[S] $SELF_NAME: $MESSAGE\e[0m"
-}
-
-simple_green_echo() {
-    echo -e "\x1b[1;32m$MESSAGE\e[0m"
-}
-
-# Prints $MESSAGE in blue foreground color
-#
-# For e.g. You can use the convetion of using BLUE color for [I]nfo messages
-# that require special user attention (especially when script requires input from user to continue)
-blue_echo() {
-    echo -e "\x1b[1;34m[I] $SELF_NAME: $MESSAGE\e[0m"
-}
-
-simple_blue_echo() {
-    echo -e "\x1b[1;34m$MESSAGE\e[0m"
+output_log(){
+    columns2="$(tput cols)"
+    noise=$(printf '%*s' $[columns2])
+    printf '%s\n' "$noise" | tr " " "#"
+    echo " "
+    display_center "$1" "$2"
+    echo " "
+    printf '%s\n' "$noise" | tr " " "#" 
 }

@@ -9,7 +9,7 @@ Help()
    echo "Syntax: circle.sh [-h] operation_name"
    echo
    echo "operations:"
-   echo "download     Download and unziping raspbian iso."
+   echo "list     List avalible iso"
    echo "space        Add free space to iso"
    echo "chroot       Exetude your script"
    echo
@@ -33,63 +33,132 @@ done
 
 source tools/color.sh
 
+pwd=$(pwd)
+iso_name=$(ls iso/ | cut -d' ' -f2)
+iso_size=$(ls -lh iso/ | cut -d' ' -f2 | cut -c -4 | sed -n '1p')
 
-
-print_space=$"======================"
-
-if [[ $1 == "download" ]]; then
-    echo $print_space
-    echo "DOWNLOAD ISO AND TOOLS"; green_echo
-    echo $print_space
-    sudo tools/get_iso.sh
+if [[ $1 == "list" ]]; then
+    output_log "YELLOW" "List ISO"
+    echo ""
+    colorText "YELLOW" "Img name - "$iso_name
+    colorText "YELLOW" "Img size - "$iso_size
+    colorText "YELLOW" "Img path - "$pwd"/iso/"
 
 elif [[ $1 == "space" ]]; then
-    echo $print_space
-    MESSAGE="ADDING SPACE" ; blue_echo
-    echo $print_space
-    sudo tools/update_iso.sh
-    MESSAGE="ADDING SPACE COMPLETE" ; green_echo
-
-elif [[ $1 == "mount" ]]; then
-    echo $print_space
-    MESSAGE="MOUNTING..." ; blue_echo
-    echo $print_space
+    output_log "YELLOW" "Adding space"
 
     sudo service binfmt-support restart
 
-    iso_name=$(ls iso/ | cut -d' ' -f2)
-    loop_dev=$(sudo kpartx -v -a iso/$iso_name | awk '{print $3}')
-    sudo mount /dev/mapper/"$(echo $loop_dev | cut -c -5)"p2 mnt/
-    sudo mount /dev/mapper/"$(echo $loop_dev | cut -c -5)"p1 mnt/boot
+    colorText "YELLOW" "Img name - "$iso_name
+    colorText "YELLOW" "Img size - "$iso_size
+    colorText "GREEN" "Input add space size in Mb"
+
+    read input
+
+    if [[ $input ]] && [ $input -eq $input 2>/dev/null ]
+    then
+        colorText "YELLOW" "Adding ""$input""Mb in img file"
+        dd if=/dev/zero bs=1M count=$input >> iso/$iso_name
+        colorText "GREEN" "Done"
+        echo ""
+        colorText "YELLOW" "New img spec:"
+        colorText "YELLOW" "Img name - "$iso_name
+        iso_size=$(ls -lh iso/ | cut -d' ' -f2 | cut -c -4 | sed -n '1p')
+        colorText "YELLOW" "Img size - "$iso_size
+
+
+        output_log "YELLOW" "RESIZE FILESYSTEM"
+        loop_dev=$(sudo kpartx -v -a iso/$iso_name | awk '{print $3}' | cut -c -5 | sed -n '1p')
+        colorText "YELLOW" "Loop dev - "$loop_dev
+
+        sudo parted /dev/$loop_dev ---pretend-input-tty << EOF
+resizepart 2 -1s
+quit
+EOF
+
+        sudo losetup -d /dev/$loop_dev
+        sudo e2fsck -fy /dev/mapper/$loop_dev"p2" #> /dev/null 2>&1 &
+        sleep 2
+        sudo resize2fs /dev/mapper/$loop_dev"p2" #> /dev/null 2>&1 &
+
+        colorText "GREEN" "COMPLETE RESIZE FILESYSTEM"
+
+        while [[ "$loop_dev" != '' ]]
+        do
+        sleep 2
+        sudo kpartx -d /dev/$loop_dev
+        loop_dev=$(ls /dev/mapper/ | awk '{print $1}' |  sed -n '2p' | cut -c -5)
+
+        sudo service binfmt-support stop
+        done
+
+        stty sane
+        exit
+    else
+        colorText "RED" "$input is not an integer or not defined"
+        stty sane
+        exit
+    fi
+
+elif [[ $1 == "mount" ]]; then
+    
+    output_log "YELLOW" "MOUNT FILE SYSTEM"
+
+    sudo service binfmt-support restart
+
+    loop_dev=$(sudo kpartx -v -a iso/$iso_name | awk '{print $3}' | cut -c -5 | sed -n '1p')
+    sudo mount /dev/mapper/$loop_dev"p2" mnt/
+    sudo mount /dev/mapper/$loop_dev"p1" mnt/boot
     sudo cp /usr/bin/qemu-arm-static mnt/usr/bin
     sudo rm -rf mnt/etc/resolv.conf
-    sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
+    #sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
     sudo mount -o bind /dev mnt/dev
     sudo mount -o bind /dev/pts mnt/dev/pts
     sudo mount -o bind /proc mnt/proc
     sudo mount -o bind /sys mnt/sys
-    sudo mount -o bind /run mnt/run
-    sudo cp /etc/network/interfaces mnt/etc/network/interfaces
     sudo cp /etc/resolv.conf mnt/etc/resolv.conf
-    sudo echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
-    sudo chroot mnt/
-    MESSAGE="COMPLETE MOUNT" ; green_echo
 
 elif [[ $1 == "umount" ]]; then
-    echo $print_space
-    MESSAGE="UMOUNTING..." ; blue_echo
-    echo $print_space
-    sudo tools/umount.sh
-    MESSAGE="COMPLETE UMOUNT" ; green_echo
+    
+    output_log "YELLOW" "UMOUNT FILE SYSTEM"
+
+    loop_dev=$(ls /dev/mapper/ | awk '{print $1}' |  sed -n '2p' | cut -c -5)
+
+    while [[ "$loop_dev" != '' ]]
+    do
+    sudo umount mnt/dev
+    sudo umount mnt/dev/pts
+    sudo umount mnt/proc
+    sudo umount mnt/sys
+    sudo umount mnt/run
+    sudo umount mnt/boot
+    sudo umount mnt/
+    sleep 2
+    sudo kpartx -d /dev/$loop_dev
+    sudo service binfmt-support stop
+    loop_dev=$(ls /dev/mapper/ | awk '{print $1}' |  sed -n '2p' | cut -c -5)
+    done
 
 elif [[ $1 == "chroot" ]]; then
-    echo $print_space
-    MESSAGE="START CHROOT SCRIPT" ; blue_echo
-    echo $print_space
-    sudo tools/chroot.sh "$2" "$3" "$4"
-    MESSAGE="COMPLETE CHROOT SCRIPT" ; green_echo
+    
+    output_log "YELLOW" "RUN CHROOT"
+
+    sudo service binfmt-support restart
+
+    loop_dev=$(sudo kpartx -v -a iso/$iso_name | awk '{print $3}' | cut -c -5 | sed -n '1p')
+    sudo mount /dev/mapper/$loop_dev"p2" mnt/
+    sudo mount /dev/mapper/$loop_dev"p1" mnt/boot
+    sudo cp /usr/bin/qemu-arm-static mnt/usr/bin
+    sudo rm -rf mnt/etc/resolv.conf
+    #sudo echo nameserver 8.8.8.8 >> mnt/etc/resolv.conf
+    sudo mount -o bind /dev mnt/dev
+    sudo mount -o bind /dev/pts mnt/dev/pts
+    sudo mount -o bind /proc mnt/proc
+    sudo mount -o bind /sys mnt/sys
+    sudo cp /etc/resolv.conf mnt/etc/resolv.conf
+    sudo chroot mnt/
+    
 else
-    echo $print_space
-    MESSAGE="WRONG OPTION" ; red_echo
-    MESSAGE="use -h to see operations" ; blue_echo
+    
+    output_log "RED" "UNKNOWN FLAG plese type -h - options"    
 fi
